@@ -18,14 +18,18 @@
   include_tasks: "../../download/tasks/download_file.yml"
   vars:
     download: "{{ download_defaults | combine(downloads.etcd) }}"
-  when: container_manager in ['crio', 'containerd']
+  when:
+    - container_manager in ['crio', 'containerd']
+    - not (skip_downloads | default(false))
 
 - name: Copy etcd binary
   unarchive:
     src: "{{ downloads.etcd.dest }}"
     dest: "{{ local_release_dir }}/"
     remote_src: true
-  when: container_manager in ['crio', 'containerd']
+  when:
+    - container_manager in ['crio', 'containerd']
+    - not (skip_downloads | default(false))
 
 - name: Copy etcdctl and etcdutl binary from download dir
   copy:
