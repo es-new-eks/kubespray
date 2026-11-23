@@ -1,0 +1,135 @@
+---
+- name: Registry host | Resolve the first control-plane node
+  set_fact:
+    registry_host_first_control_plane: "{{ groups['kube_control_plane'][0] }}"
+
+- name: Registry host | Check the image archive
+  stat:
+    path: "{{ registry_host_image_tar }}"
+  register: registry_host_image_archive
+  when:
+    - registry_host_image_tar | length > 0
+    - inventory_hostname == registry_host_first_control_plane
+
+- name: Registry host | Fail if the offline image archive is missing
+  fail:
+    msg: "registry_host_image_tar is set but does not exist: {{ registry_host_image_tar }}"
+  when:
+    - registry_host_image_tar | length > 0
+    - inventory_hostname == registry_host_first_control_plane
+    - not registry_host_image_archive.stat.exists
+
+- name: Registry host | Inspect the registry image
+  command: "{{ registry_host_runtime }} image inspect {{ registry_host_image }}"
+  register: registry_host_image_inspect
+  changed_when: false
+  failed_when: false
+  when: inventory_hostname == registry_host_first_control_plane
+
+- name: Registry host | Load the offline registry image
+  command: "{{ registry_host_runtime }} load -i {{ registry_host_image_tar }}"
+  register: registry_host_image_load
+  changed_when: true
+  when:
+    - inventory_hostname == registry_host_first_control_plane
+    - registry_host_image_inspect.rc != 0
+    - registry_host_image_tar | length > 0
+
+- name: Registry host | Pull the registry image when online mode is enabled
+  command: "{{ registry_host_runtime }} pull {{ registry_host_image }}"
+  register: registry_host_image_pull
+  changed_when: true
+  when:
+    - inventory_hostname == registry_host_first_control_plane
+    - registry_host_image_inspect.rc != 0
+    - registry_host_image_tar | length == 0
+    - registry_host_pull_image | bool
+
+- name: Registry host | Fail when the registry image is not available offline
+  fail:
+    msg: >-
+      registry_host_image {{ registry_host_image }} is not present and
+      registry_host_image_tar is empty. Provide the offline image tar or set
+      registry_host_pull_image=true for an online environment.
+  when:
+    - inventory_hostname == registry_host_first_control_plane
+    - registry_host_image_inspect.rc != 0
+    - registry_host_image_tar | length == 0
+    - not (registry_host_pull_image | bool)
+
+- name: Registry host | Create the data directory
+  file:
+    path: "{{ registry_host_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: inventory_hostname == registry_host_first_control_plane
+
+- name: Registry host | Install the systemd service
+  template:
+    src: eks-roller-registry-host.service.j2
+    dest: /etc/systemd/system/eks-roller-registry-host.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: registry_host_unit
+  when: inventory_hostname == registry_host_first_control_plane
+
+- name: Registry host | Start the registry service
+  systemd:
+    name: eks-roller-registry-host
+    daemon_reload: "{{ registry_host_unit is changed }}"
+    enabled: true
+    state: started
+  when: inventory_hostname == registry_host_first_control_plane
+
+- name: Registry host | Wait for the registry API
+  wait_for:
+    host: 127.0.0.1
+    port: "{{ registry_host_port }}"
+    timeout: "{{ registry_host_wait_timeout }}"
+  when: inventory_hostname == registry_host_first_control_plane
+
+- name: Registry host | Verify the registry API
+  uri:
+    url: "http://127.0.0.1:{{ registry_host_port }}/v2/"
+    status_code: 200
+    return_content: true
+  register: registry_host_api
+  retries: 10
+  delay: 2
+  until: registry_host_api.status == 200
+  when: inventory_hostname == registry_host_first_control_plane
+
+- name: Registry host | Create the containerd mirror directory
+  file:
+    path: "/etc/containerd/certs.d/{{ registry_host_address }}:{{ registry_host_port }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - registry_host_configure_mirrors | bool
+    - inventory_hostname in groups['k8s_cluster']
+
+- name: Registry host | Configure the containerd mirror
+  template:
+    src: hosts.toml.j2
+    dest: "/etc/containerd/certs.d/{{ registry_host_address }}:{{ registry_host_port }}/hosts.toml"
+    owner: root
+    group: root
+    mode: "0644"
+  register: registry_host_mirror
+  when:
+    - registry_host_configure_mirrors | bool
+    - inventory_hostname in groups['k8s_cluster']
+
+- name: Registry host | Reload containerd after a mirror change
+  systemd:
+    name: containerd
+    state: restarted
+  when:
+    - registry_host_configure_mirrors | bool
+    - inventory_hostname in groups['k8s_cluster']
+    - registry_host_mirror is changed

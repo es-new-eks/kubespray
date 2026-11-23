@@ -2,6 +2,13 @@
 # Helm deployment
 helm_enabled: false
 
+# Pre-install registry on the first control-plane node.
+# This is separate from the post-install registry addon below.
+registry_host_enabled: false
+# registry_host_image_tar: /var/lib/eks-roller/registry-images.tar
+# registry_host_configure_mirrors: true
+# registry_host_port: 5000
+
 # Registry deployment
 registry_enabled: false
 # registry_namespace: kube-system

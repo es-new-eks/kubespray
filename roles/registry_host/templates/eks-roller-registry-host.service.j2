@@ -1,0 +1,14 @@
+[Unit]
+Description=EasyStack pre-install container registry
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=2
+ExecStart={{ registry_host_runtime }} run --rm --name {{ registry_host_name }} -p {{ registry_host_port }}:5000 -v {{ registry_host_data_dir }}:/var/lib/registry {{ registry_host_image }}
+ExecStop={{ registry_host_runtime }} stop {{ registry_host_name }}
+
+[Install]
+WantedBy=multi-user.target

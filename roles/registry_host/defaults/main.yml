@@ -1,0 +1,29 @@
+---
+# Pre-install registry on the first control-plane node.
+#
+# This is intentionally separate from the post-install kubernetes-apps/registry
+# addon.  It must run before the download role so that the target nodes can pull
+# the kubespray images from the first node while the Kubernetes API does not
+# exist yet.
+registry_host_enabled: false
+
+# docker is used when the node already runs Docker; containerd nodes use nerdctl.
+registry_host_runtime: >-
+  {{ 'docker' if container_manager | default('') == 'docker'
+     else ('nerdctl' if container_manager | default('') == 'containerd'
+           else 'podman') }}
+
+registry_host_name: eks-roller-registry
+registry_host_port: 5000
+registry_host_data_dir: /var/lib/registry
+registry_host_image: "{{ registry_image_repo | default('registry') }}:{{ registry_image_tag | default('2.8.1') }}"
+
+# Offline: point this at the registry image tar shipped in the delivery package.
+# When empty, the image must already be present in the local runtime.
+registry_host_image_tar: ""
+registry_host_pull_image: false
+
+# Write a containerd hosts.toml for the first-node registry on every cluster node.
+registry_host_configure_mirrors: true
+registry_host_address: "{{ hostvars[groups['kube_control_plane'][0]]['ansible_host'] | default(hostvars[groups['kube_control_plane'][0]]['ansible_default_ipv4']['address']) }}"
+registry_host_wait_timeout: 60

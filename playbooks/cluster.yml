@@ -14,6 +14,7 @@
     - { role: kubespray_defaults }
     - { role: kubernetes/preinstall, tags: preinstall }
     - { role: "container-engine", tags: "container-engine", when: deploy_container_engine }
+    - { role: registry_host, tags: registry-host, when: registry_host_enabled | default(false) }
     - { role: download, tags: download, when: "not skip_downloads" }
 
 - name: Install etcd
