@@ -6,6 +6,18 @@ registry_disk_size: "10Gi"
 registry_port: 5000
 registry_replica_count: 1
 
+# Optional host-level mode for a pinned registry node.
+# It is useful when migrating from the pre-install host registry and the
+# existing data directory must be reused without changing containerd.
+registry_host_network: false
+registry_node_name: ""
+registry_host_path: ""
+registry_tolerations: []
+registry_run_as_user: 1000
+registry_fs_group: 1000
+# Reusing a root-owned host path usually requires
+# registry_run_as_user=0 and registry_fs_group=0.
+
 # type of service: ClusterIP, LoadBalancer or NodePort
 registry_service_type: "ClusterIP"
 # you can specify your cluster IP address when registry_service_type is ClusterIP

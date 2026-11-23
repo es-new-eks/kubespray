@@ -24,11 +24,18 @@ spec:
         k8s-app: registry
         version: v{{ registry_image_tag }}
     spec:
+{% if registry_host_network %}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+{% endif %}
+{% if registry_node_name != "" %}
+      nodeName: {{ registry_node_name }}
+{% endif %}
       priorityClassName: {% if registry_namespace == 'kube-system' %}system-cluster-critical{% else %}k8s-cluster-critical{% endif %}{{ '' }}
       serviceAccountName: registry
       securityContext:
-        fsGroup: 1000
-        runAsUser: 1000
+        fsGroup: {{ registry_fs_group }}
+        runAsUser: {{ registry_run_as_user }}
       containers:
         - name: registry
           image: {{ registry_image_repo }}:{{ registry_image_tag }}
@@ -91,7 +98,11 @@ spec:
               port: {{ registry_port }}
       volumes:
         - name: registry-pvc
-{% if registry_storage_class != "" %}
+{% if registry_host_path != "" %}
+          hostPath:
+            path: {{ registry_host_path }}
+            type: DirectoryOrCreate
+{% elif registry_storage_class != "" %}
           persistentVolumeClaim:
             claimName: registry-pvc
 {% else %}

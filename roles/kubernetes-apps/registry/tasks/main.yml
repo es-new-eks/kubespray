@@ -25,6 +25,20 @@
     - registry_service_nodeport is defined and registry_service_nodeport | length > 0
     - registry_service_type != "NodePort"
 
+- name: Registry | Check node pin with host path
+  fail:
+    msg: "registry_node_name must be set when registry_host_path is used"
+  when:
+    - registry_host_path != ""
+    - registry_node_name == ""
+
+- name: Registry | Check storage backends are exclusive
+  fail:
+    msg: "registry_host_path and registry_storage_class cannot be used together"
+  when:
+    - registry_host_path != ""
+    - registry_storage_class != ""
+
 - name: Registry | Create addon dir
   file:
     path: "{{ kube_config_dir }}/addons/registry"
@@ -41,7 +55,7 @@
       - { name: registry-svc, file: registry-svc.yml, type: svc }
       - { name: registry-secrets, file: registry-secrets.yml, type: secrets }
       - { name: registry-cm, file: registry-cm.yml, type: cm }
-      - { name: registry-rs, file: registry-rs.yml, type: rs }
+      - { name: "{{ 'registry' if registry_host_network else 'registry-rs' }}", file: "{{ 'registry-deployment.yml' if registry_host_network else 'registry-rs.yml' }}", type: "{{ 'deployment' if registry_host_network else 'rs' }}" }
 
 - name: Registry | Append ingress templates to Registry Templates list when ALB ingress enabled
   set_fact:

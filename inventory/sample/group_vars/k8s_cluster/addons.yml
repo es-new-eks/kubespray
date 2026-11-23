@@ -14,6 +14,15 @@ registry_enabled: false
 # registry_namespace: kube-system
 # registry_storage_class: ""
 # registry_disk_size: "10Gi"
+# Optional pinned host registry mode (Deployment + hostNetwork), e.g. to reuse /var/lib/registry
+# from the pre-install registry. hostNetwork avoids a CNI dependency and
+# keeps nodeIP:5000 stable for containerd.
+# registry_host_network: false
+# registry_node_name: ""
+# registry_host_path: ""
+# registry_run_as_user: 1000
+# registry_fs_group: 1000
+# registry_tolerations: []
 
 # Metrics Server deployment
 metrics_server_enabled: false
