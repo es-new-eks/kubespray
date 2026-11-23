@@ -39,6 +39,22 @@
     - registry_host_path != ""
     - registry_storage_class != ""
 
+- name: Registry | Check the hostPath exists on the registry node
+  stat:
+    path: "{{ registry_host_path }}"
+  register: registry_host_path_stat
+  when:
+    - registry_host_path != ""
+    - inventory_hostname == groups['kube_control_plane'][0]
+
+- name: Registry | Fail when the hostPath is absent
+  fail:
+    msg: "registry_host_path must already exist on the registry node: {{ registry_host_path }}"
+  when:
+    - registry_host_path != ""
+    - inventory_hostname == groups['kube_control_plane'][0]
+    - not registry_host_path_stat.stat.exists
+
 - name: Registry | Create addon dir
   file:
     path: "{{ kube_config_dir }}/addons/registry"
