@@ -178,9 +178,15 @@ apiServer:
   - name: service-account-lookup
     value: "{{ kube_apiserver_service_account_lookup }}"
 {% endif %}
-{% if kube_oidc_auth and kube_oidc_url is defined and kube_oidc_client_id is defined and not kube_apiserver_use_authentication_config_file %}
+{% if kube_oidc_auth and kube_oidc_client_id is defined and not kube_apiserver_use_authentication_config_file %}
+{%   set dex_host = (kube_oidc_fip | default('', true) | trim) or (kube_oidc_management_vip | default('', true) | trim) or (kube_oidc_management_first_master | default('', true) | trim) %}
+{%   if kube_oidc_url is defined or dex_host %}
   - name: oidc-issuer-url
+{%     if kube_oidc_url is defined %}
     value: "{{ kube_oidc_url }}"
+{%     else %}
+    value: "https://{{ '[' ~ dex_host ~ ']' if ':' in dex_host and not dex_host.startswith('[') else dex_host }}:{{ kube_oidc_port | default(32000) }}"
+{%     endif %}
   - name: oidc-client-id
     value: "{{ kube_oidc_client_id }}"
 {%   if kube_oidc_ca_file is defined %}
@@ -203,6 +209,7 @@ apiServer:
   - name: oidc-groups-prefix
     value: "{{ kube_oidc_groups_prefix }}"
 {%   endif %}
+{% endif %}
 {% endif %}
 {% if kube_apiserver_use_authentication_config_file %}
   - name: authentication-config

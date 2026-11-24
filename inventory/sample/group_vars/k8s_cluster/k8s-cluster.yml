@@ -44,9 +44,12 @@ credentials_dir: "{{ inventory_dir }}/credentials"
 ## Variables for OpenID Connect Configuration https://kubernetes.io/docs/admin/authentication/
 ## To use OpenID you have to deploy additional an OpenID Provider (e.g Dex, Keycloak, ...)
 
-# kube_oidc_url: https:// ...   # optional explicit override
-# kube_oidc_fip: 203.0.113.10  # optional external FIP for the OIDC issuer
-# kube_oidc_port: 32000        # used when kube_oidc_url is not set
+# kube_oidc_url: https://id.example.org/dex  # explicit issuer takes precedence
+# For a central Dex, supply its management-side addresses in preference order.
+# kube_oidc_fip: 203.0.113.10
+# kube_oidc_management_vip: 192.0.2.10
+# kube_oidc_management_first_master: 192.0.2.11
+# kube_oidc_port: 32000
 # kube_oidc_client_id: kubernetes
 ## Optional settings for OIDC
 # kube_oidc_ca_file: "{{ kube_cert_dir }}/ca.pem"

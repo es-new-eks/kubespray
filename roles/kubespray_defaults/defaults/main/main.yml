@@ -654,16 +654,6 @@ first_kube_control_plane: "{{ groups['kube_control_plane'] | first }}"
 kube_apiserver_address: "{{ hostvars[inventory_hostname]['main_ip'] }}"
 kube_apiserver_access_address: "{{ hostvars[inventory_hostname]['main_access_ip'] }}"
 first_kube_control_plane_address: "{{ hostvars[groups['kube_control_plane'][0]]['main_access_ip'] }}"
-# OIDC issuer host selection for --oidc-issuer-url.
-# kube_oidc_fip is the optional front-end supplied external address.
-# If unset, fall back to the API VIP, then the first control-plane address.
-# An explicitly supplied kube_oidc_url still takes precedence over this default.
-kube_oidc_fip: ""
-kube_oidc_port: 32000
-kube_oidc_url: >-
-  https://{{ (kube_oidc_fip | default('') | trim)
-              or (kube_vip_address | default('') | trim)
-              or first_kube_control_plane_address | ansible.utils.ipwrap }}:{{ kube_oidc_port }}
 loadbalancer_apiserver_localhost: "{{ loadbalancer_apiserver is not defined }}"
 loadbalancer_apiserver_type: "nginx"
 # applied if only external loadbalancer_apiserver is defined, otherwise ignored
