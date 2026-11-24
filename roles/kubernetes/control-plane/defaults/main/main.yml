@@ -175,7 +175,9 @@ kube_apiserver_admission_plugins_podnodeselector_default_node_selector: ""
 ## Variables for OpenID Connect Configuration https://kubernetes.io/docs/admin/authentication/
 ## To use OpenID you have to deploy additional an OpenID Provider (e.g Dex, Keycloak, ...)
 
-# kube_oidc_url: https:// ...
+# kube_oidc_url: https:// ...   # optional explicit override; otherwise computed
+# kube_oidc_fip: 203.0.113.10  # optional external FIP; falls back to VIP/first control plane
+# kube_oidc_port: 32000
 # kube_oidc_client_id: kubernetes
 ## Optional settings for OIDC
 # kube_oidc_username_claim: sub
